@@ -1,8 +1,9 @@
+import 'dotenv/config'
 import { Routes, REST, Client, GatewayIntentBits, bold } from 'discord.js'
 const commands = [
 	{
-		name: 'humantix',
-		description: 'Retrieve active Humantix tickets',
+		name: 'humanitix',
+		description: 'Retrieve active Humanitix tickets',
 	},
 ]
 async function registerCommands() {
@@ -53,12 +54,20 @@ const getEvents = async () => {
 		}
 
 		const spareLaptopQuestionId = humantixEvent.additionalQuestions.find(x => x.question === "Do you need to borrow a laptop?")._id;
-
+		
 		return {
 			name: humantixEvent.name,
 			ordersCount: tickets.length,
-			contributions: tickets.reduce((acc, ticket) => acc + ticket.netPrice, 0),
-			sparesNeeded: tickets.reduce((acc, ticket) => acc + (ticket.additionalFields.find(x => x.questionId === spareLaptopQuestionId).value === "Yes" ? 1 : 0), 0)
+			sparesNeeded: tickets.reduce((acc, ticket) => { 
+				const additionalQuestion = ticket.additionalFields.find(x => x.questionId === spareLaptopQuestionId);
+
+				if(!additionalQuestion) {
+					return acc;
+				} else {
+					return acc + (additionalQuestion.value === "Yes" ? 1 : 0)
+				}
+
+			}, 0)
 		}
 
 	}));
@@ -77,12 +86,11 @@ const startBot = async () => {
 	client.on('interactionCreate', async (interaction) => {
 		if (!interaction.isCommand()) return
 
-		if (interaction.commandName === 'humantix') {
+		if (interaction.commandName === 'humanitix') {
 			
-			const events = await getEvents();
+			const events = (await getEvents()).sort((a,b) => b.ordersCount - a.ordersCount);
             
-			await interaction.reply(`
-				${events.map(event => event.isRemote ? `${bold(event.name)}\nOrders: ${event.ordersCount}` : `${bold(event.name)}\nOrders: ${event.ordersCount}\nContributions: $${event.contributions}\nSpares needed: ${event.sparesNeeded}`).join('\n\n')}`);
+			await interaction.reply(`${events.map(event => event.isRemote ? `${bold(event.name)}\nOrders: ${event.ordersCount}` : `${bold(event.name)}\nOrders: ${event.ordersCount}\nSpares needed: ${event.sparesNeeded}`).join('\n\n')}\n\nTotal registrations: ${bold(events.reduce((acc, event) => acc + event.ordersCount, 0))}`);
 		}
 	})
 
