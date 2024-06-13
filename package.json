@@ -2,10 +2,11 @@
     "name": "humantixbot",
     "private": true,
     "scripts": {
-        "start": "nodemon index.mjs"
+        "start": "nodemon --env-file=.env index.mjs"
     },
     "dependencies": {
-        "discord.js": "^14.14.1"
+        "discord.js": "^14.14.1",
+        "dotenv": "^16.4.5"
     },
     "devDependencies": {
         "nodemon": "^3.0.2"
